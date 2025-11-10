@@ -4,7 +4,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CRED_PATH = os.path.join(BASE_DIR, "service-account.json")
+CRED_PATH = os.path.join(BASE_DIR, "sa-journi.json")
 
 if not firebase_admin._apps: # Проверка, чтобы не инициализировать дважды
     if os.path.exists(CRED_PATH):
