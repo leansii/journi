@@ -65,3 +65,6 @@ ENV/
 # Local development
 *.log
 .cache/
+**/*sa*.json
+**/sa*.json
+**/service-account*.json
