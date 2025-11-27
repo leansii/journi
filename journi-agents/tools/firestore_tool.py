@@ -16,7 +16,11 @@ if not firebase_admin._apps: # Проверка, чтобы не инициал�
         firebase_admin.initialize_app()
         print("🔥 Firestore initialized with default credentials (Cloud Run mode)")
 
-db = firestore.client()
+# Get Firestore database ID from environment variable, default to '(default)'
+FIRESTORE_DATABASE_ID = os.environ.get("FIRESTORE_DATABASE_ID", "(default)")
+
+# Pass the database ID to the client
+db = firestore.client(database_id=FIRESTORE_DATABASE_ID)
 
 def save_note(text: str, category: str, full_json_data: dict) -> str:
     """Saves the original note and returns its ID."""
@@ -84,29 +88,27 @@ def save_symptoms(health_data: dict, note_id: str):
     doc_ref.set(h_data)
     print(f"🩺 Saved health log")
 
-def save_full_entry(text: str, json_data_str: str) -> str:
-    """
-    Orchestrates saving: Note first, then all related details.
-    """
-    try:
-        data = json.loads(json_data_str)
-        category = data.get("category")
-        payload = data.get("data")
+def create_initial_note(text: str, user_id: str = "demo_user_123") -> str:
+    """Creates an initial note with 'processing' status and returns its ID."""
+    note_data = {
+        "user_id": user_id,
+        "text": text,
+        "status": "processing",
+        "created_at": firestore.SERVER_TIMESTAMP,
+        "processed_data": {} 
+    }
+    _, doc_ref = db.collection("notes").add(note_data)
+    note_id = doc_ref.id
+    print(f"📝 Initial note created: {note_id}")
+    return note_id
 
-        note_id = save_note(text, category, data)
-
-        if category == "MIXED" and payload:
-            if "finance" in payload: save_transactions(payload["finance"], note_id)
-            if "nutrition" in payload: save_meals(payload["nutrition"], note_id)
-            if "fitness" in payload: save_workouts(payload["fitness"], note_id)
-            if "health" in payload: save_symptoms(payload["health"], note_id)
-        
-        elif category == "FINANCE": save_transactions(payload, note_id)
-        elif category == "NUTRITION": save_meals(payload, note_id)
-        elif category == "FITNESS": save_workouts(payload, note_id)
-        elif category == "HEALTH": save_symptoms(payload, note_id)
-
-        return json.dumps({"status": "success", "note_id": note_id})
-    except Exception as e:
-        print(f"❌ Save Error: {e}")
-        return json.dumps({"status": "error", "message": str(e)})
+def update_note_with_results(note_id: str, category: str, full_json_data: dict):
+    """Updates the note with the final processed data and sets status to 'processed'."""
+    note_ref = db.collection("notes").document(note_id)
+    update_data = {
+        "status": "processed",
+        "category": category,
+        "processed_data": full_json_data
+    }
+    note_ref.update(update_data)
+    print(f"✅ Note updated: {note_id}")
