@@ -3,7 +3,7 @@ annotated-doc==0.0.3
 annotated-types==0.7.0
 anyio==4.11.0
 attrs==25.4.0
-Authlib==1.6.5
+Authlib==1.6.6
 CacheControl==0.14.3
 cachetools==6.2.1
 certifi==2025.10.5
